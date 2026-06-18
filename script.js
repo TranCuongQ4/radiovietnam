@@ -47,6 +47,42 @@
     // ===== Lấy tất cả nút radio =====
     const radioButtons = document.querySelectorAll('.radio-btn');
 
+    // ===== Hàm hiển thị trạng thái loading =====
+    function showLoadingStatus(btn, message) {
+        if (!btn) return;
+        // Tìm hoặc tạo span hiển thị trạng thái
+        let statusSpan = btn.querySelector('.station-status');
+        if (!statusSpan) {
+            statusSpan = document.createElement('span');
+            statusSpan.className = 'station-status';
+            // Chèn sau tên đài
+            const nameSpan = btn.querySelector('.station-name');
+            if (nameSpan) {
+                nameSpan.after(statusSpan);
+            } else {
+                btn.appendChild(statusSpan);
+            }
+        }
+        statusSpan.textContent = message;
+        statusSpan.style.display = 'block';
+    }
+
+    // ===== Hàm ẩn trạng thái loading =====
+    function hideLoadingStatus(btn) {
+        if (!btn) return;
+        const statusSpan = btn.querySelector('.station-status');
+        if (statusSpan) {
+            statusSpan.style.display = 'none';
+        }
+    }
+
+    // ===== Hàm xóa trạng thái loading khỏi tất cả nút =====
+    function clearAllLoadingStatus() {
+        document.querySelectorAll('.station-status').forEach(function(el) {
+            el.style.display = 'none';
+        });
+    }
+
     // ===== Hàm dừng phát hiện tại =====
     function stopCurrentStation() {
         if (currentHLS) {
@@ -67,10 +103,13 @@
             const oldBtn = document.querySelector(`.radio-btn[data-station="${currentStation}"]`);
             if (oldBtn) {
                 oldBtn.classList.remove('active');
+                hideLoadingStatus(oldBtn); // Ẩn trạng thái khi dừng
             }
             currentStation = null;
         }
         isPlaying = false;
+        // Xóa tất cả trạng thái loading còn sót
+        clearAllLoadingStatus();
     }
 
     // ===== Hàm phát radio =====
@@ -92,9 +131,19 @@
 
         const apiUrl = `${WORKER_URL}/${slug}`;
         const btn = document.querySelector(`.radio-btn[data-station="${stationSlug}"]`);
+        
+        // Hiển thị trạng thái "Đang dò tần số..."
         if (btn) {
             btn.classList.add('active');
+            showLoadingStatus(btn, '📻 Đang dò tần số...!');
         }
+
+        // Xóa trạng thái loading của các nút khác
+        document.querySelectorAll('.radio-btn').forEach(function(otherBtn) {
+            if (otherBtn !== btn) {
+                hideLoadingStatus(otherBtn);
+            }
+        });
 
         fetch(apiUrl)
             .then(response => {
@@ -136,14 +185,24 @@
                     });
                     hls.loadSource(streamUrl);
                     hls.attachMedia(audio);
+                    
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        // Khi đã parse manifest thành công, ẩn trạng thái loading
+                        if (btn) {
+                            hideLoadingStatus(btn);
+                        }
                         audio.play().catch(err => {
                             console.warn('Autoplay bị chặn:', err);
                         });
                     });
+                    
                     hls.on(Hls.Events.ERROR, function(event, data) {
                         if (data.fatal) {
                             console.error('Lỗi HLS:', data);
+                            // Hiển thị lỗi trên nút
+                            if (btn) {
+                                showLoadingStatus(btn, '⚠️ Lỗi kết nối...!');
+                            }
                             setTimeout(() => {
                                 if (currentStation === stationSlug) {
                                     playRadio(stationSlug);
@@ -151,11 +210,29 @@
                             }, 2000);
                         }
                     });
+                    
+                    // Thêm event khi audio đang phát (đảm bảo ẩn loading)
+                    audio.addEventListener('playing', function() {
+                        if (btn) {
+                            hideLoadingStatus(btn);
+                        }
+                    });
+                    
                     currentHLS = hls;
                 } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Safari
                     audio.src = streamUrl;
+                    audio.addEventListener('playing', function() {
+                        if (btn) {
+                            hideLoadingStatus(btn);
+                        }
+                    });
                     audio.play().catch(err => {
                         console.warn('Autoplay bị chặn:', err);
+                        // Nếu autoplay bị chặn nhưng stream đã load, vẫn ẩn loading
+                        if (btn) {
+                            hideLoadingStatus(btn);
+                        }
                     });
                 } else {
                     throw new Error('Trình duyệt không hỗ trợ HLS');
@@ -168,6 +245,11 @@
                 console.error('❌ Lỗi:', error);
                 if (btn) {
                     btn.classList.remove('active');
+                    showLoadingStatus(btn, '⚠️ Không thể kết nối!');
+                    // Tự động ẩn sau 2 giây
+                    setTimeout(function() {
+                        hideLoadingStatus(btn);
+                    }, 2000);
                 }
                 alert('Không thể phát radio. Vui lòng thử lại!');
             });

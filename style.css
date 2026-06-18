@@ -307,3 +307,48 @@ body {
     scrollbar-width: none;
     -ms-overflow-style: none;
 }
+
+/* ===== TRẠNG THÁI LOADING DƯỚI NÚT ===== */
+.station-status {
+    display: none;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    padding: 0 4px;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    animation: blinkStatus 1.2s ease-in-out infinite;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@keyframes blinkStatus {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* Điều chỉnh trên màn hình nhỏ */
+@media (max-width: 400px) {
+    .station-status {
+        font-size: 10px;
+        bottom: 2px;
+    }
+}
+
+@media (max-height: 580px) {
+    .station-status {
+        font-size: 9px;
+        bottom: 1px;
+    }
+}
