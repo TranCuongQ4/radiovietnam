@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Radio Việt Nam</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- HLS.js để phát radio -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+	<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📻</text></svg>">
+</head>
+<body>
+    <!-- Container chính -->
+    <div id="app-container">
+        <!-- Header với hiệu ứng chớp -->
+        <header id="header">
+            <h1 id="header-title">Radio Việt Nam</h1>
+        </header>
+
+        <!-- Grid 6 nút radio -->
+        <div id="radio-grid">
+            <button class="radio-btn" data-station="vov1">
+                <span class="station-name">VOV 1</span>
+            </button>
+            <button class="radio-btn" data-station="vov2">
+                <span class="station-name">VOV 2</span>
+            </button>
+            <button class="radio-btn" data-station="vov3">
+                <span class="station-name">VOV 3</span>
+            </button>
+            <button class="radio-btn" data-station="vovgt-hcm">
+                <span class="station-name">Giao Thông</br>TPHCM</span>
+            </button>
+            <button class="radio-btn" data-station="vovgt-hn">
+                <span class="station-name">Giao Thông</br>HÀ NỘI</span>
+            </button>
+            <button class="radio-btn" data-station="voh-fm">
+                <span class="station-name">99.9 MHz</span>
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <footer id="footer">
+            <p>Thiết Kế Trần Cường - Zalo: 0907860662</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

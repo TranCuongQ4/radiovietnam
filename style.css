@@ -1,0 +1,309 @@
+/* Reset và cấu hình chung */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Ngăn chặn copy text trên toàn bộ trang */
+* {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a; /* Nền xám đậm Dark Mode */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 10px;
+    background: radial-gradient(ellipse at center, #2a2a2a 0%, #0d0d0d 100%);
+}
+
+/* Container chính - kích thước chuẩn 375x667 */
+#app-container {
+    width: 375px;
+    height: 667px;
+    max-width: 100%;
+    max-height: 100dvh;
+    background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%); /* Nền tối bên trong */
+    border-radius: 20px;
+    padding: 20px 20px 15px 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.8),
+        0 0 0 2px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ========== HEADER ========== */
+#header {
+    text-align: center;
+    padding: 8px 0 15px 0;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: relative;
+}
+
+#header-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 
+        0 0 15px rgba(255, 255, 255, 0.4),
+        0 0 30px rgba(255, 255, 255, 0.2),
+        0 0 60px rgba(255, 255, 255, 0.1);
+    animation: blinkText 2s ease-in-out infinite;
+    letter-spacing: 3px;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Hiệu ứng chớp chữ trắng mượt mà hơn */
+@keyframes blinkText {
+    0%, 100% {
+        opacity: 1;
+        text-shadow: 
+            0 0 15px rgba(255, 255, 255, 0.6),
+            0 0 30px rgba(255, 255, 255, 0.3),
+            0 0 60px rgba(255, 255, 255, 0.15);
+    }
+    50% {
+        opacity: 0.35;
+        text-shadow: 
+            0 0 5px rgba(255, 255, 255, 0.2),
+            0 0 15px rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* ========== GRID NÚT RADIO ========== */
+#radio-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 14px;
+    padding: 18px 4px;
+    align-content: center;
+}
+
+/* Mỗi nút radio - thiết kế 3D nổi với hiệu ứng Dark Mode */
+.radio-btn {
+    background: linear-gradient(145deg, #e53935, #b71c1c);
+    border: none;
+    border-radius: 16px;
+    box-shadow: 
+        0 8px 0 #7f1d1d,
+        0 12px 28px rgba(0, 0, 0, 0.5),
+        inset 0 2px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -4px 0 rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.08s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    will-change: transform;
+}
+
+/* Hiệu ứng 3D khi nhấn */
+.radio-btn:active {
+    transform: translateY(6px);
+    box-shadow: 
+        0 2px 0 #7f1d1d,
+        0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Hover nhẹ cho desktop */
+@media (hover: hover) {
+    .radio-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 10px 0 #7f1d1d,
+            0 16px 32px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* Tên đài trên nút - màu trắng */
+.station-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+/* ===== TRẠNG THÁI ĐANG PHÁT ===== */
+/* Chữ chớp, nút giữ nguyên với glow nhẹ */
+.radio-btn.active {
+    box-shadow: 
+        0 8px 0 #7f1d1d,
+        0 0 30px rgba(229, 57, 53, 0.4),
+        0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.radio-btn.active .station-name {
+    animation: blinkTextStation 0.8s ease-in-out infinite;
+    text-shadow: 
+        0 0 20px rgba(255, 255, 255, 0.9),
+        0 0 40px rgba(255, 255, 255, 0.5),
+        0 0 80px rgba(255, 255, 255, 0.2);
+}
+
+@keyframes blinkTextStation {
+    0%, 100% {
+        opacity: 1;
+        text-shadow: 
+            0 0 20px rgba(255, 255, 255, 0.9),
+            0 0 40px rgba(255, 255, 255, 0.5),
+            0 0 80px rgba(255, 255, 255, 0.2);
+    }
+    50% {
+        opacity: 0.3;
+        text-shadow: 
+            0 0 5px rgba(255, 255, 255, 0.2),
+            0 0 15px rgba(255, 255, 255, 0.05);
+    }
+}
+
+/* ========== FOOTER ========== */
+#footer {
+    flex-shrink: 0;
+    text-align: center;
+    padding: 10px 0 5px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#footer p {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.8px;
+    margin: 0;
+    font-weight: 300;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ========== RESPONSIVE ========== */
+/* Đảm bảo hiển thị đẹp trên mọi thiết bị */
+@media (max-width: 400px) {
+    #app-container {
+        width: 100%;
+        height: 100dvh;
+        border-radius: 0;
+        padding: 15px 12px 10px 12px;
+        border: none;
+        box-shadow: none;
+    }
+    
+    .station-name {
+        font-size: 24px;
+    }
+    
+    #header-title {
+        font-size: 24px;
+        letter-spacing: 2px;
+    }
+}
+
+@media (max-height: 670px) {
+    #app-container {
+        height: 100dvh;
+        border-radius: 0;
+        padding: 12px 12px 8px 12px;
+        border: none;
+        box-shadow: none;
+    }
+    
+    .radio-btn {
+        border-radius: 12px;
+        box-shadow: 0 6px 0 #7f1d1d, 0 10px 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    .radio-btn:active {
+        transform: translateY(4px);
+        box-shadow: 0 2px 0 #7f1d1d, 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+    
+    .station-name {
+        font-size: 24px;
+    }
+    
+    #header-title {
+        font-size: 20px;
+    }
+    
+    #radio-grid {
+        gap: 10px;
+        padding: 12px 2px;
+    }
+}
+
+@media (max-height: 580px) {
+    #header {
+        padding: 4px 0 8px 0;
+    }
+    
+    #header-title {
+        font-size: 17px;
+    }
+    
+    .station-name {
+        font-size: 24px;
+    }
+    
+    #radio-grid {
+        gap: 6px;
+        padding: 8px 0;
+    }
+    
+    .radio-btn {
+        border-radius: 10px;
+        padding: 4px;
+        box-shadow: 0 4px 0 #7f1d1d, 0 6px 12px rgba(0, 0, 0, 0.5);
+    }
+    
+    #footer p {
+        font-size: 9px;
+    }
+}
+
+/* Ngăn chặn copy toàn bộ */
+#app-container {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Ẩn scrollbar nhưng vẫn scroll được (nếu cần) */
+#app-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Điều chỉnh thanh cuộn (nếu có) */
+#app-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
