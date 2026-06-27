@@ -50,12 +50,10 @@
     // ===== Hàm hiển thị trạng thái loading =====
     function showLoadingStatus(btn, message) {
         if (!btn) return;
-        // Tìm hoặc tạo span hiển thị trạng thái
         let statusSpan = btn.querySelector('.station-status');
         if (!statusSpan) {
             statusSpan = document.createElement('span');
             statusSpan.className = 'station-status';
-            // Chèn sau tên đài
             const nameSpan = btn.querySelector('.station-name');
             if (nameSpan) {
                 nameSpan.after(statusSpan);
@@ -103,12 +101,11 @@
             const oldBtn = document.querySelector(`.radio-btn[data-station="${currentStation}"]`);
             if (oldBtn) {
                 oldBtn.classList.remove('active');
-                hideLoadingStatus(oldBtn); // Ẩn trạng thái khi dừng
+                hideLoadingStatus(oldBtn);
             }
             currentStation = null;
         }
         isPlaying = false;
-        // Xóa tất cả trạng thái loading còn sót
         clearAllLoadingStatus();
     }
 
@@ -132,13 +129,11 @@
         const apiUrl = `${WORKER_URL}/${slug}`;
         const btn = document.querySelector(`.radio-btn[data-station="${stationSlug}"]`);
         
-        // Hiển thị trạng thái "Đang dò tần số..."
         if (btn) {
             btn.classList.add('active');
             showLoadingStatus(btn, '📻 Đang dò tần số...!');
         }
 
-        // Xóa trạng thái loading của các nút khác
         document.querySelectorAll('.radio-btn').forEach(function(otherBtn) {
             if (otherBtn !== btn) {
                 hideLoadingStatus(otherBtn);
@@ -177,8 +172,42 @@
                 document.body.appendChild(audio);
                 currentAudio = audio;
 
-                // Phát HLS
-                if (Hls.isSupported()) {
+                // ===== KIỂM TRA ĐỊNH DẠNG STREAM =====
+                const isMP3 = streamUrl.endsWith('.mp3') || streamUrl.includes('.mp3');
+                const isHLS = streamUrl.includes('.m3u8') || streamUrl.includes('playlist');
+
+                if (isMP3) {
+                    // 📻 Phát MP3 trực tiếp (cho RFI Tiếng Việt)
+                    console.log('🎵 Phát MP3 trực tiếp');
+                    audio.src = streamUrl;
+                    
+                    audio.addEventListener('playing', function() {
+                        if (btn) {
+                            hideLoadingStatus(btn);
+                        }
+                    });
+                    
+                    audio.addEventListener('error', function(e) {
+                        console.error('Lỗi phát MP3:', e);
+                        if (btn) {
+                            showLoadingStatus(btn, '⚠️ Lỗi phát!');
+                            setTimeout(() => hideLoadingStatus(btn), 2000);
+                        }
+                    });
+                    
+                    audio.play().catch(err => {
+                        console.warn('Autoplay bị chặn:', err);
+                        if (btn) {
+                            hideLoadingStatus(btn);
+                        }
+                    });
+                    
+                    currentHLS = null;
+                    currentAudio = audio;
+
+                } else if (isHLS && Hls.isSupported()) {
+                    // 📻 Phát HLS (cho các đài VOV)
+                    console.log('📡 Phát HLS');
                     const hls = new Hls({
                         enableWorker: true,
                         lowLatencyMode: true,
@@ -187,7 +216,6 @@
                     hls.attachMedia(audio);
                     
                     hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                        // Khi đã parse manifest thành công, ẩn trạng thái loading
                         if (btn) {
                             hideLoadingStatus(btn);
                         }
@@ -199,7 +227,6 @@
                     hls.on(Hls.Events.ERROR, function(event, data) {
                         if (data.fatal) {
                             console.error('Lỗi HLS:', data);
-                            // Hiển thị lỗi trên nút
                             if (btn) {
                                 showLoadingStatus(btn, '⚠️ Lỗi kết nối...!');
                             }
@@ -211,7 +238,6 @@
                         }
                     });
                     
-                    // Thêm event khi audio đang phát (đảm bảo ẩn loading)
                     audio.addEventListener('playing', function() {
                         if (btn) {
                             hideLoadingStatus(btn);
@@ -219,8 +245,11 @@
                     });
                     
                     currentHLS = hls;
-                } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
-                    // Safari
+                    currentAudio = audio;
+
+                } else if (isHLS && audio.canPlayType('application/vnd.apple.mpegurl')) {
+                    // 📻 Safari - phát HLS native
+                    console.log('🍎 Safari - phát HLS native');
                     audio.src = streamUrl;
                     audio.addEventListener('playing', function() {
                         if (btn) {
@@ -229,13 +258,15 @@
                     });
                     audio.play().catch(err => {
                         console.warn('Autoplay bị chặn:', err);
-                        // Nếu autoplay bị chặn nhưng stream đã load, vẫn ẩn loading
                         if (btn) {
                             hideLoadingStatus(btn);
                         }
                     });
+                    currentHLS = null;
+                    currentAudio = audio;
+
                 } else {
-                    throw new Error('Trình duyệt không hỗ trợ HLS');
+                    throw new Error('Trình duyệt không hỗ trợ định dạng stream này');
                 }
 
                 currentStation = stationSlug;
@@ -246,7 +277,6 @@
                 if (btn) {
                     btn.classList.remove('active');
                     showLoadingStatus(btn, '⚠️ Không thể kết nối!');
-                    // Tự động ẩn sau 2 giây
                     setTimeout(function() {
                         hideLoadingStatus(btn);
                     }, 2000);
