@@ -109,7 +109,118 @@
         clearAllLoadingStatus();
     }
 
-    // ===== Hàm phát radio =====
+    // ===== Hàm phát MP3 đơn giản (dùng cho RFI) =====
+    function playMP3Direct(streamUrl, btn, stationSlug) {
+        console.log('🎵 Phát MP3 trực tiếp:', streamUrl);
+        
+        const audio = document.createElement('audio');
+        audio.id = 'radio-audio-element';
+        audio.style.display = 'none';
+        document.body.appendChild(audio);
+        currentAudio = audio;
+        audio.src = streamUrl;
+        
+        // Xử lý sự kiện
+        const onCanPlay = function() {
+            if (btn) hideLoadingStatus(btn);
+            audio.removeEventListener('canplay', onCanPlay);
+        };
+        const onPlaying = function() {
+            if (btn) hideLoadingStatus(btn);
+            audio.removeEventListener('playing', onPlaying);
+        };
+        const onError = function(e) {
+            console.error('Lỗi phát MP3:', e);
+            if (btn) {
+                showLoadingStatus(btn, '⚠️ Lỗi phát!');
+                setTimeout(() => hideLoadingStatus(btn), 3000);
+            }
+            audio.removeEventListener('error', onError);
+        };
+        
+        audio.addEventListener('canplay', onCanPlay);
+        audio.addEventListener('playing', onPlaying);
+        audio.addEventListener('error', onError);
+        
+        // Ẩn loading sau 1.5 giây (phòng trường hợp sự kiện không kích hoạt)
+        setTimeout(() => {
+            if (btn) hideLoadingStatus(btn);
+        }, 1500);
+        
+        audio.play().catch(err => {
+            console.warn('Autoplay bị chặn:', err);
+            if (btn) hideLoadingStatus(btn);
+        });
+        
+        currentHLS = null;
+        currentStation = stationSlug;
+        isPlaying = true;
+        
+        // Lưu lại audio để dừng sau
+        currentAudio = audio;
+    }
+
+    // ===== Hàm phát HLS (dùng cho VOV) =====
+    function playHLS(streamUrl, btn, stationSlug) {
+        console.log('📡 Phát HLS:', streamUrl);
+        
+        const audio = document.createElement('audio');
+        audio.id = 'radio-audio-element';
+        audio.style.display = 'none';
+        document.body.appendChild(audio);
+        currentAudio = audio;
+        
+        if (Hls.isSupported()) {
+            const hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+            });
+            hls.loadSource(streamUrl);
+            hls.attachMedia(audio);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                if (btn) hideLoadingStatus(btn);
+                audio.play().catch(err => console.warn('Autoplay bị chặn:', err));
+            });
+            
+            hls.on(Hls.Events.ERROR, function(event, data) {
+                if (data.fatal) {
+                    console.error('Lỗi HLS:', data);
+                    if (btn) {
+                        showLoadingStatus(btn, '⚠️ Lỗi kết nối...!');
+                    }
+                    setTimeout(() => {
+                        if (currentStation === stationSlug) {
+                            playRadio(stationSlug);
+                        }
+                    }, 3000);
+                }
+            });
+            
+            audio.addEventListener('playing', function() {
+                if (btn) hideLoadingStatus(btn);
+            });
+            
+            currentHLS = hls;
+            
+        } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+            // Safari
+            audio.src = streamUrl;
+            audio.addEventListener('playing', function() {
+                if (btn) hideLoadingStatus(btn);
+            });
+            audio.play().catch(err => console.warn('Autoplay bị chặn:', err));
+            currentHLS = null;
+        } else {
+            throw new Error('Trình duyệt không hỗ trợ HLS');
+        }
+        
+        currentStation = stationSlug;
+        isPlaying = true;
+        currentAudio = audio;
+    }
+
+    // ===== Hàm phát radio chính =====
     function playRadio(stationSlug) {
         // Nếu đang phát đài này rồi thì dừng
         if (currentStation === stationSlug && isPlaying) {
@@ -140,6 +251,22 @@
             }
         });
 
+        // ===== ⭐ XỬ LÝ RFI TIẾNG VIỆT ĐẶC BIỆT =====
+        // Luôn dùng link MP3 cố định cho RFI, không cần gọi Worker
+        if (stationSlug === 'rfi-tieng-viet') {
+            const rfiUrl = 'https://rfienvietnamien64k.ice.infomaniak.ch/rfienvietnamien-64.mp3';
+            console.log('📻 Phát RFI Tiếng Việt (MP3 cố định)');
+            
+            // Ẩn loading sau 500ms (cho nó nhanh)
+            setTimeout(() => {
+                if (btn) hideLoadingStatus(btn);
+            }, 500);
+            
+            playMP3Direct(rfiUrl, btn, stationSlug);
+            return;
+        }
+
+        // ===== XỬ LÝ CÁC ĐÀI VOV =====
         fetch(apiUrl)
             .then(response => {
                 if (!response.ok) {
@@ -165,112 +292,8 @@
                 console.log('🔗 Link:', streamUrl);
                 console.log('📡 Nguồn:', data.source || 'unknown');
 
-                // Tạo audio element
-                const audio = document.createElement('audio');
-                audio.id = 'radio-audio-element';
-                audio.style.display = 'none';
-                document.body.appendChild(audio);
-                currentAudio = audio;
-
-                // ===== KIỂM TRA ĐỊNH DẠNG STREAM =====
-                const isMP3 = streamUrl.endsWith('.mp3') || streamUrl.includes('.mp3');
-                const isHLS = streamUrl.includes('.m3u8') || streamUrl.includes('playlist');
-
-                if (isMP3) {
-                    // 📻 Phát MP3 trực tiếp (cho RFI Tiếng Việt)
-                    console.log('🎵 Phát MP3 trực tiếp');
-                    audio.src = streamUrl;
-                    
-                    audio.addEventListener('playing', function() {
-                        if (btn) {
-                            hideLoadingStatus(btn);
-                        }
-                    });
-                    
-                    audio.addEventListener('error', function(e) {
-                        console.error('Lỗi phát MP3:', e);
-                        if (btn) {
-                            showLoadingStatus(btn, '⚠️ Lỗi phát!');
-                            setTimeout(() => hideLoadingStatus(btn), 2000);
-                        }
-                    });
-                    
-                    audio.play().catch(err => {
-                        console.warn('Autoplay bị chặn:', err);
-                        if (btn) {
-                            hideLoadingStatus(btn);
-                        }
-                    });
-                    
-                    currentHLS = null;
-                    currentAudio = audio;
-
-                } else if (isHLS && Hls.isSupported()) {
-                    // 📻 Phát HLS (cho các đài VOV)
-                    console.log('📡 Phát HLS');
-                    const hls = new Hls({
-                        enableWorker: true,
-                        lowLatencyMode: true,
-                    });
-                    hls.loadSource(streamUrl);
-                    hls.attachMedia(audio);
-                    
-                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                        if (btn) {
-                            hideLoadingStatus(btn);
-                        }
-                        audio.play().catch(err => {
-                            console.warn('Autoplay bị chặn:', err);
-                        });
-                    });
-                    
-                    hls.on(Hls.Events.ERROR, function(event, data) {
-                        if (data.fatal) {
-                            console.error('Lỗi HLS:', data);
-                            if (btn) {
-                                showLoadingStatus(btn, '⚠️ Lỗi kết nối...!');
-                            }
-                            setTimeout(() => {
-                                if (currentStation === stationSlug) {
-                                    playRadio(stationSlug);
-                                }
-                            }, 2000);
-                        }
-                    });
-                    
-                    audio.addEventListener('playing', function() {
-                        if (btn) {
-                            hideLoadingStatus(btn);
-                        }
-                    });
-                    
-                    currentHLS = hls;
-                    currentAudio = audio;
-
-                } else if (isHLS && audio.canPlayType('application/vnd.apple.mpegurl')) {
-                    // 📻 Safari - phát HLS native
-                    console.log('🍎 Safari - phát HLS native');
-                    audio.src = streamUrl;
-                    audio.addEventListener('playing', function() {
-                        if (btn) {
-                            hideLoadingStatus(btn);
-                        }
-                    });
-                    audio.play().catch(err => {
-                        console.warn('Autoplay bị chặn:', err);
-                        if (btn) {
-                            hideLoadingStatus(btn);
-                        }
-                    });
-                    currentHLS = null;
-                    currentAudio = audio;
-
-                } else {
-                    throw new Error('Trình duyệt không hỗ trợ định dạng stream này');
-                }
-
-                currentStation = stationSlug;
-                isPlaying = true;
+                // Phát HLS
+                playHLS(streamUrl, btn, stationSlug);
             })
             .catch(error => {
                 console.error('❌ Lỗi:', error);
@@ -279,7 +302,7 @@
                     showLoadingStatus(btn, '⚠️ Không thể kết nối!');
                     setTimeout(function() {
                         hideLoadingStatus(btn);
-                    }, 2000);
+                    }, 3000);
                 }
                 alert('Không thể phát radio. Vui lòng thử lại!');
             });
