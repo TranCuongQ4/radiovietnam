@@ -38,7 +38,7 @@
         'vov3': 'vov3',
         'vovgt-hcm': 'vovgt-hcm',
         'vovgt-hn': 'vovgt-hn',
-        'voh-fm': 'voh-fm'
+        'rfi-tieng-viet': 'rfi-tieng-viet'
     };
 
     // ===== WORKER URL CỦA BẠN =====
